@@ -305,12 +305,79 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                           color: Colors.black87,
                         ),
                       ),
-                      Text(
-                        'Sorted by: Recent',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'Sorted by: ',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedSortOption,
+                              icon: const Icon(
+                                Icons.arrow_drop_down,
+                                size: 20,
+                                color: Colors.black87,
+                              ),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade800,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              dropdownColor: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'Recent',
+                                  child: Text('Recent'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'pending',
+                                  child: Text('Pending'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'continue',
+                                  child: Text('Continue'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'onhold',
+                                  child: Text('On Hold'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'complete',
+                                  child: Text('Complete'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _selectedSortOption = value;
+                                    // Optional: sorting/filter logic
+                                    if (value != 'Recent') {
+                                      ProjectDetailsScreen._projects.sort((
+                                        a,
+                                        b,
+                                      ) {
+                                        if (a.status == value &&
+                                            b.status != value)
+                                          return -1;
+                                        if (a.status != value &&
+                                            b.status == value)
+                                          return 1;
+                                        return 0;
+                                      });
+                                    }
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+
+                        ],
                       ),
                     ],
                   );
@@ -320,9 +387,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           ),
 
           // Projects Grid/List
-          isWideScreen
-              ? _buildWideScreenGrid()
-              : _buildMobileList(),
+          isWideScreen ? _buildWideScreenGrid() : _buildMobileList(),
 
           SliverToBoxAdapter(child: const SizedBox(height: 100)),
         ],
@@ -659,10 +724,23 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: PopupMenuButton<String>(
-        icon: Row(
+        onSelected: (value) async {
+          setState(() {
+            project.status = value;
+          });
+
+          await _getStatusText(project.id, value);
+        },
+        itemBuilder: (context) => const [
+          PopupMenuItem(value: 'pending', child: Text('Pending')),
+          PopupMenuItem(value: 'continue', child: Text('Continue')),
+          PopupMenuItem(value: 'onhold', child: Text('On Hold')),
+          PopupMenuItem(value: 'complete', child: Text('Complete')),
+        ],
+        child: Row(
           children: [
             Text(
-              _getStatusText(project.status),
+              project.status,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -672,33 +750,23 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
             const Icon(Icons.arrow_drop_down, size: 18, color: Colors.black87),
           ],
         ),
-        onSelected: (value) {
-          setState(() {
-            project.status = value;
-          });
-        },
-        itemBuilder: (context) => [
-          const PopupMenuItem(value: 'pending', child: Text('Pending')),
-          const PopupMenuItem(value: 'continue', child: Text('Continue')),
-          const PopupMenuItem(value: 'onhold', child: Text('On Hold')),
-          const PopupMenuItem(value: 'complete', child: Text('Complete')),
-        ],
       ),
     );
   }
 
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'pending':
-        return 'Pending';
-      case 'continue':
-        return 'Continue';
-      case 'onhold':
-        return 'On Hold';
-      case 'complete':
-        return 'Complete';
-      default:
-        return 'Pending';
+  Future<void> _getStatusText(String projectId, String status) async {
+    var url = Uri.parse(
+      "https://prakrutitech.xyz/batch_project/update_project_status.php",
+    );
+    var response = await http.post(
+      url,
+      body: {'id': projectId, 'status': status},
+    );
+
+    if (response.statusCode == 200) {
+      print("✅ Working update status API call!! ${response.body}");
+    } else {
+      print("❌ Not Working update status API call");
     }
   }
 
