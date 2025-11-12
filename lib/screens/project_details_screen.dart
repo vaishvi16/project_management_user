@@ -1,34 +1,17 @@
 // lib/screens/project_details_screen.dart
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+
 import '../models/project.dart';
 import 'dashboard_screen.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
   const ProjectDetailsScreen({super.key});
 
-  static final List<Project> _projects = [
-    Project(
-      id: '1',
-      name: 'Project Alpha',
-      description: 'AI Integration for enhanced user experience with advanced machine learning capabilities',
-      type: 'Web',
-      members: ['User1', 'User2'],
-      startDate: DateTime.now().subtract(const Duration(days: 30)),
-      endDate: DateTime.now().add(const Duration(days: 60)),
-      progress: 0.7,
-    ),
-    Project(
-      id: '2',
-      name: 'Project Beta',
-      description: 'Mobile app development with Flutter for cross-platform compatibility',
-      type: 'Mobile',
-      members: ['User3', 'User4', 'User5'],
-      startDate: DateTime.now().subtract(const Duration(days: 15)),
-      endDate: DateTime.now().add(const Duration(days: 45)),
-      progress: 0.3,
-    ),
-  ];
+  static final List<Project> _projects = [];
 
   @override
   State<ProjectDetailsScreen> createState() => _ProjectDetailsScreenState();
@@ -46,6 +29,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
   String _selectedSortOption = 'Recent';
+  late Future<List<Project>> _projectsFuture;
 
   @override
   void initState() {
@@ -70,25 +54,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       ),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.3, 1, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    _staggerAnimations = List.generate(
-      ProjectDetailsScreen._projects.length,
-          (index) => Tween<double>(begin: 0, end: 1).animate(
-        CurvedAnimation(
-          parent: _animationController,
-          curve: Interval(0.2 + (0.15 * index), 1.0, curve: Curves.elasticOut),
-        ),
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.3, 1, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _scrollController.addListener(_onScroll);
 
@@ -97,6 +69,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       _animationController.forward();
       _pulseController.repeat(reverse: true);
     });
+
+    _projectsFuture = getProjects();
   }
 
   void _onScroll() {
@@ -114,11 +88,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
     super.dispose();
   }
 
-  List<Project> get _filteredProjects {
-    if (_searchQuery.isEmpty) return ProjectDetailsScreen._projects;
-    return ProjectDetailsScreen._projects.where((project) =>
-    project.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        project.description.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+  List<Project> _filteredProjects(List<Project> projects) {
+    if (_searchQuery.isEmpty) return projects;
+    return projects.where((project) {
+      final query = _searchQuery.toLowerCase();
+      return project.name.toLowerCase().contains(query) ||
+          project.description.toLowerCase().contains(query);
+    }).toList();
   }
 
   // Safe opacity getter that clamps values between 0 and 1
@@ -128,7 +104,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
 
   // Safe scale getter that prevents invalid values
   double _getSafeScale(Animation<double> animation) {
-    return animation.value.clamp(0.01, 1.0); // Minimum scale of 0.01 to avoid invisible elements
+    return animation.value.clamp(
+      0.01,
+      1.0,
+    ); // Minimum scale of 0.01 to avoid invisible elements
   }
 
   @override
@@ -153,18 +132,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
             ),
           ),
         ),
-        backgroundColor: _scrollOffset > 100 ? Colors.white.withOpacity(0.95) : Colors.transparent,
+        backgroundColor: _scrollOffset > 100
+            ? Colors.white.withOpacity(0.95)
+            : Colors.transparent,
         elevation: _scrollOffset > 100 ? 4 : 0,
         flexibleSpace: Container(
           decoration: BoxDecoration(
-            gradient: _scrollOffset > 100 ? null : const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF1976D2),
-                Color(0xFF7B1FA2),
-              ],
-            ),
+            gradient: _scrollOffset > 100
+                ? null
+                : const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF1976D2), Color(0xFF7B1FA2)],
+                  ),
           ),
         ),
         systemOverlayStyle: SystemUiOverlayStyle.light,
@@ -187,10 +167,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF1976D2),
-                    Color(0xFF7B1FA2),
-                  ],
+                  colors: [Color(0xFF1976D2), Color(0xFF7B1FA2)],
                 ),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(32),
@@ -246,13 +223,20 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
 
                         // Search Bar
                         SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.5),
-                            end: Offset.zero,
-                          ).animate(CurvedAnimation(
-                            parent: _animationController,
-                            curve: const Interval(0.5, 1, curve: Curves.easeOut),
-                          )),
+                          position:
+                              Tween<Offset>(
+                                begin: const Offset(0, 0.5),
+                                end: Offset.zero,
+                              ).animate(
+                                CurvedAnimation(
+                                  parent: _animationController,
+                                  curve: const Interval(
+                                    0.5,
+                                    1,
+                                    curve: Curves.easeOut,
+                                  ),
+                                ),
+                              ),
                           child: FadeTransition(
                             opacity: _fadeAnimation,
                             child: Container(
@@ -265,14 +249,23 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                               ),
                               child: TextField(
                                 controller: _searchController,
-                                onChanged: (value) => setState(() => _searchQuery = value),
+                                onChanged: (value) =>
+                                    setState(() => _searchQuery = value),
                                 style: const TextStyle(color: Colors.white),
                                 decoration: InputDecoration(
                                   hintText: 'Search projects...',
-                                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                                  prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.7)),
+                                  hintStyle: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: Colors.white.withOpacity(0.7),
+                                  ),
                                   border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 16,
+                                  ),
                                 ),
                               ),
                             ),
@@ -290,75 +283,48 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${filteredProjects.length} Projects',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  Row(
+              child: FutureBuilder<List<Project>>(
+                future: _projectsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('No projects found'));
+                  }
+
+                  final projects = _filteredProjects(snapshot.data!);
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Sorted by: ',
+                        '${projects.length} Projects',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        'Sorted by: Recent',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedSortOption,
-                          icon: const Icon(Icons.arrow_drop_down, size: 20, color: Colors.black87),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade800,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          dropdownColor: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          items: const [
-                            DropdownMenuItem(value: 'Recent', child: Text('Recent')),
-                            DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                            DropdownMenuItem(value: 'continue', child: Text('Continue')),
-                            DropdownMenuItem(value: 'onhold', child: Text('On Hold')),
-                            DropdownMenuItem(value: 'complete', child: Text('Complete')),
-                          ],
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                _selectedSortOption = value;
-                                // Optional: sorting/filter logic
-                                if (value != 'Recent') {
-                                  ProjectDetailsScreen._projects.sort((a, b) {
-                                    if (a.status == value && b.status != value) return -1;
-                                    if (a.status != value && b.status == value) return 1;
-                                    return 0;
-                                  });
-                                }
-                              });
-                            }
-                          },
                         ),
                       ),
                     ],
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ),
 
           // Projects Grid/List
-          isWideScreen ? _buildWideScreenGrid(filteredProjects) : _buildMobileList(filteredProjects),
+          isWideScreen
+              ? _buildWideScreenGrid()
+              : _buildMobileList(),
 
-          SliverToBoxAdapter(
-            child: const SizedBox(height: 100),
-          ),
+          SliverToBoxAdapter(child: const SizedBox(height: 100)),
         ],
       ),
     );
@@ -374,43 +340,77 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(
-            colors: [
-              Colors.white.withOpacity(0.1),
-              Colors.transparent,
-            ],
+            colors: [Colors.white.withOpacity(0.1), Colors.transparent],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildWideScreenGrid(List<Project> projects) {
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 20,
-          mainAxisSpacing: 20,
-          childAspectRatio: 1.6,
-        ),
-        delegate: SliverChildBuilderDelegate(
-              (context, index) => _buildProjectCard(projects[index], index),
-          childCount: projects.length,
-        ),
-      ),
+  Widget _buildWideScreenGrid() {
+    return FutureBuilder<List<Project>>(
+      future: _projectsFuture,
+      builder: (BuildContext context, AsyncSnapshot<List<Project>> snapshot) {
+        if (snapshot.hasError) {
+          return SliverToBoxAdapter(
+            child: Center(child: Text('Error: ${snapshot.error}')),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SliverToBoxAdapter(
+            child: Center(child: Text('No projects found')),
+          );
+        }
+
+        final projects = snapshot.data!;
+        final filteredProjects = _filteredProjects(projects);
+
+        return SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 20,
+              mainAxisSpacing: 20,
+              childAspectRatio: 1.6,
+            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final project = filteredProjects[index];
+
+              return _buildProjectCard(project, index);
+            }, childCount: filteredProjects.length),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildMobileList(List<Project> projects) {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-            (context, index) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-          child: _buildProjectCard(projects[index], index),
-        ),
-        childCount: projects.length,
-      ),
+  Widget _buildMobileList() {
+    return FutureBuilder<List<Project>>(
+      future: _projectsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return SliverToBoxAdapter(
+            child: Center(child: Text('Error: ${snapshot.error}')),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SliverToBoxAdapter(
+            child: Center(child: Text('No projects found')),
+          );
+        }
+
+        final projects = snapshot.data!;
+        final filteredProjects = _filteredProjects(projects);
+
+        return SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final project = filteredProjects[index];
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: _buildProjectCard(project, index),
+            );
+          }, childCount: filteredProjects.length),
+        );
+      },
     );
   }
 
@@ -569,7 +569,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                                   duration: const Duration(milliseconds: 800),
                                   curve: Curves.easeOut,
                                   height: 6,
-                                  width: constraints.maxWidth * project.progress,
+                                  width:
+                                      constraints.maxWidth * project.progress,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
@@ -596,7 +597,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                         // Members
                         Row(
                           children: [
-                            Icon(Icons.people_outline, size: 16, color: Colors.grey.shade600),
+                            Icon(
+                              Icons.people_outline,
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               '${project.members.length} members',
@@ -611,14 +616,22 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                         // Timeline
                         Row(
                           children: [
-                            Icon(Icons.schedule, size: 16, color: Colors.grey.shade600),
+                            Icon(
+                              Icons.schedule,
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               '$daysRemaining days left',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: daysRemaining < 7 ? const Color(0xFFF57C00) : Colors.grey.shade600,
-                                fontWeight: daysRemaining < 7 ? FontWeight.w600 : FontWeight.normal,
+                                color: daysRemaining < 7
+                                    ? const Color(0xFFF57C00)
+                                    : Colors.grey.shade600,
+                                fontWeight: daysRemaining < 7
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
                               ),
                             ),
                           ],
@@ -676,11 +689,16 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
 
   String _getStatusText(String status) {
     switch (status) {
-      case 'pending': return 'Pending';
-      case 'continue': return 'Continue';
-      case 'onhold': return 'On Hold';
-      case 'complete': return 'Complete';
-      default: return 'Pending';
+      case 'pending':
+        return 'Pending';
+      case 'continue':
+        return 'Continue';
+      case 'onhold':
+        return 'On Hold';
+      case 'complete':
+        return 'Complete';
+      default:
+        return 'Pending';
     }
   }
 
@@ -693,16 +711,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
     Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const DashboardScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const DashboardScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOutCubic,
-            )),
+            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeInOutCubic,
+                  ),
+                ),
             child: child,
           );
         },
@@ -740,6 +759,46 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
         return const Color(0xFF7B1FA2);
       default:
         return Colors.grey;
+    }
+  }
+
+  Future<List<Project>> getProjects() async {
+    var url = Uri.parse(
+      "https://prakrutitech.xyz/batch_project/view_project.php",
+    );
+    var response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      print("Get project api working! ${response.body.toString()}");
+      final jsonResponse = jsonDecode(response.body);
+
+      final List<dynamic> projectsJson = jsonResponse['projects'] ?? [];
+
+      // Convert to list of Project objects
+      final List<Project> projects = projectsJson
+          .map((json) => Project.fromJson(json))
+          .toList();
+
+      setState(() {
+        _staggerAnimations = List.generate(
+          projects.length,
+          (index) => Tween<double>(begin: 0, end: 1).animate(
+            CurvedAnimation(
+              parent: _animationController,
+              curve: Interval(
+                0.2 + (0.15 * index),
+                1.0,
+                curve: Curves.elasticOut,
+              ),
+            ),
+          ),
+        );
+      });
+
+      return projects;
+    } else {
+      print("Get project api not working!!");
+      return [];
     }
   }
 }
