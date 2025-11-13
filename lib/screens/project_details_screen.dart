@@ -459,7 +459,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const SliverToBoxAdapter(
-            child: Center(child: Text('No projects found')),
+            child: Center(child: CircularProgressIndicator()),
           );
         }
 
