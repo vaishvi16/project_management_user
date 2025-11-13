@@ -137,6 +137,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  TextButton(onPressed: (){}, child: Text("Forgot Password?")),
+                  const SizedBox(height: 16),
                   // Theme Toggle (for demo)
                   TextButton.icon(
                     onPressed: () => themeProvider.toggleTheme(),
