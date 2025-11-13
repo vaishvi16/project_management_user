@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   String? _selectedRole;
   static const List<String> _roles = ['Designer', 'Web Developer', 'App Developer', 'Tester', 'Backend'];
+  bool _showMessage = false;
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +138,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  TextButton(onPressed: (){}, child: Text("Forgot Password?")),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _showMessage = !_showMessage; // toggle message
+                      });
+                    },
+                    child: Text("Forgot Password?"),
+                  ),
+                  if (_showMessage)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        "Please contact your admin",
+                        style: TextStyle(color: Colors.red, fontSize: 16),
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   // Theme Toggle (for demhgffhyo)
                   TextButton.icon(
