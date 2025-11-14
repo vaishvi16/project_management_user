@@ -23,13 +23,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
   late AnimationController _pulseController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  late List<Animation<double>> _staggerAnimations;
+  List<Animation<double>> _staggerAnimations = [];
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
-  String _selectedSortOption = 'Recent';
+  String _selectedSortOption = 'All';
   late Future<List<Project>> _projectsFuture;
+
+  // Add this key for RefreshIndicator
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+  GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
@@ -89,11 +93,22 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
   }
 
   List<Project> _filteredProjects(List<Project> projects) {
-    if (_searchQuery.isEmpty) return projects;
-    return projects.where((project) {
+    if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      return project.name.toLowerCase().contains(query) ||
-          project.description.toLowerCase().contains(query);
+      projects = projects.where((project) {
+        return project.name.toLowerCase().contains(query) ||
+            project.description.toLowerCase().contains(query);
+      }).toList();
+    }
+
+    if (_selectedSortOption == "All") {
+      return projects; // show all
+    }
+
+    final filter = _selectedSortOption.trim().toLowerCase();
+
+    return projects.where((p) {
+      return p.status.trim().toLowerCase() == filter;
     }).toList();
   }
 
@@ -141,10 +156,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
             gradient: _scrollOffset > 100
                 ? null
                 : const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF1976D2), Color(0xFF7B1FA2)],
-                  ),
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF1976D2), Color(0xFF7B1FA2)],
+            ),
           ),
         ),
         systemOverlayStyle: SystemUiOverlayStyle.light,
@@ -156,241 +171,240 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           const SizedBox(width: 8),
         ],
       ),
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          // Hero Section
-          SliverToBoxAdapter(
-            child: Container(
-              height: 320,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF1976D2), Color(0xFF7B1FA2)],
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
-              ),
-              child: Stack(
-                children: [
-                  // Background Pattern
-                  _buildBackgroundPattern(),
-
-                  // Content
-                  Padding(
-                    padding: EdgeInsets.only(
-                      top: appBarHeight + 20,
-                      left: 24,
-                      right: 24,
-                      bottom: 24,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SlideTransition(
-                          position: _slideAnimation,
-                          child: FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Project Portfolio',
-                                  style: TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    height: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Manage and track all your projects in one place',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-
-                        // Search Bar
-                        SlideTransition(
-                          position:
-                              Tween<Offset>(
-                                begin: const Offset(0, 0.5),
-                                end: Offset.zero,
-                              ).animate(
-                                CurvedAnimation(
-                                  parent: _animationController,
-                                  curve: const Interval(
-                                    0.5,
-                                    1,
-                                    curve: Curves.easeOut,
-                                  ),
-                                ),
-                              ),
-                          child: FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.3),
-                                ),
-                              ),
-                              child: TextField(
-                                controller: _searchController,
-                                onChanged: (value) =>
-                                    setState(() => _searchQuery = value),
-                                style: const TextStyle(color: Colors.white),
-                                decoration: InputDecoration(
-                                  hintText: 'Search projects...',
-                                  hintStyle: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.search,
-                                    color: Colors.white.withOpacity(0.7),
-                                  ),
-                                  border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 16,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+      body: RefreshIndicator(
+        key: _refreshIndicatorKey,
+        onRefresh: () async {
+          setState(() {
+            _projectsFuture = getProjects();
+          });
+          await _projectsFuture;
+        },
+        // Use BouncingScrollPhysics for iOS-like behavior or ClampingScrollPhysics for Android
+        notificationPredicate: (notification) {
+          // Only enable refresh when at the top of the scroll view
+          return _scrollController.positions.first.pixels == 0;
+        },
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // Hero Section
+            SliverToBoxAdapter(
+              child: Container(
+                height: 320,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF1976D2), Color(0xFF7B1FA2)],
                   ),
-                ],
-              ),
-            ),
-          ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    // Background Pattern
+                    _buildBackgroundPattern(),
 
-          // Projects Count
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-              child: FutureBuilder<List<Project>>(
-                future: _projectsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No projects found'));
-                  }
-
-                  final projects = _filteredProjects(snapshot.data!);
-
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${projects.length} Projects',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
+                    // Content
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: appBarHeight + 20,
+                        left: 24,
+                        right: 24,
+                        bottom: 24,
                       ),
-                      Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Sorted by: ',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
+                          SlideTransition(
+                            position: _slideAnimation,
+                            child: FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Project Portfolio',
+                                    style: TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Manage and track all your projects in one place',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedSortOption,
-                              icon: const Icon(
-                                Icons.arrow_drop_down,
-                                size: 20,
-                                color: Colors.black87,
-                              ),
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade800,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              dropdownColor: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'Recent',
-                                  child: Text('Recent'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'pending',
-                                  child: Text('Pending'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'continue',
-                                  child: Text('Continue'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'onhold',
-                                  child: Text('On Hold'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'complete',
-                                  child: Text('Complete'),
-                                ),
-                              ],
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() {
-                                    _selectedSortOption = value;
-                                    // Optional: sorting/filter logic
-                                    if (value != 'Recent') {
-                                      ProjectDetailsScreen._projects.sort((
-                                        a,
-                                        b,
-                                      ) {
-                                        if (a.status == value &&
-                                            b.status != value)
-                                          return -1;
-                                        if (a.status != value &&
-                                            b.status == value)
-                                          return 1;
-                                        return 0;
-                                      });
-                                    }
-                                  });
-                                }
-                              },
-                            ),
-                          ),
+                          const SizedBox(height: 32),
 
+                          // Search Bar
+                          SlideTransition(
+                            position:
+                            Tween<Offset>(
+                              begin: const Offset(0, 0.5),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: _animationController,
+                                curve: const Interval(
+                                  0.5,
+                                  1,
+                                  curve: Curves.easeOut,
+                                ),
+                              ),
+                            ),
+                            child: FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: TextField(
+                                  controller: _searchController,
+                                  onChanged: (value) =>
+                                      setState(() => _searchQuery = value),
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    hintText: 'Search projects...',
+                                    hintStyle: TextStyle(
+                                      color: Colors.white.withOpacity(0.7),
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.search,
+                                      color: Colors.white.withOpacity(0.7),
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 16,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                    ],
-                  );
-                },
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // Projects Grid/List
-          isWideScreen ? _buildWideScreenGrid() : _buildMobileList(),
+            // Projects Count
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: FutureBuilder<List<Project>>(
+                  future: _projectsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(child: Text('No projects found'));
+                    }
 
-          SliverToBoxAdapter(child: const SizedBox(height: 100)),
-        ],
+                    final projects = _filteredProjects(snapshot.data!);
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${projects.length} Projects',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              'Sorted by: ',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedSortOption,
+                                icon: const Icon(
+                                  Icons.arrow_drop_down,
+                                  size: 20,
+                                  color: Colors.black87,
+                                ),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade800,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                dropdownColor: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'All',
+                                    child: Text('All'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'pending',
+                                    child: Text('Pending'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'continue',
+                                    child: Text('Continue'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'onhold',
+                                    child: Text('On Hold'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'complete',
+                                    child: Text('Complete'),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() {
+                                      _selectedSortOption = value;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            // Projects Grid/List
+            isWideScreen ? _buildWideScreenGrid() : _buildMobileList(),
+
+            SliverToBoxAdapter(child: const SizedBox(height: 100)),
+          ],
+        ),
       ),
     );
   }
@@ -416,9 +430,21 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
     return FutureBuilder<List<Project>>(
       future: _projectsFuture,
       builder: (BuildContext context, AsyncSnapshot<List<Project>> snapshot) {
-        if (snapshot.hasError) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return SliverToBoxAdapter(
-            child: Center(child: Text('Error: ${snapshot.error}')),
+            child: Container(
+              height: 200,
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        } else if (snapshot.hasError) {
+          return SliverToBoxAdapter(
+            child: Container(
+              height: 200,
+              child: Center(child: Text('Error: ${snapshot.error}')),
+            ),
           );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const SliverToBoxAdapter(
@@ -453,13 +479,28 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
     return FutureBuilder<List<Project>>(
       future: _projectsFuture,
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return SliverToBoxAdapter(
-            child: Center(child: Text('Error: ${snapshot.error}')),
+            child: Container(
+              height: 200,
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        } else if (snapshot.hasError) {
+          return SliverToBoxAdapter(
+            child: Container(
+              height: 200,
+              child: Center(child: Text('Error: ${snapshot.error}')),
+            ),
           );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
+          return SliverToBoxAdapter(
+            child: Container(
+              height: 200,
+              child: const Center(child: Text('No projects found')),
+            ),
           );
         }
 
@@ -483,7 +524,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
     final statusColor = _getStatusColor(project.status);
     final daysRemaining = project.endDate.difference(DateTime.now()).inDays;
 
-    // Use safe animation values
+    // Safe check for stagger animations - if animations aren't ready, show static card
+    if (_staggerAnimations.isEmpty || index >= _staggerAnimations.length) {
+      return _buildStaticProjectCard(project, statusColor, daysRemaining);
+    }
+
     final animationIndex = index % _staggerAnimations.length;
 
     return AnimatedBuilder(
@@ -503,8 +548,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           ),
         );
       },
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+      child: _buildStaticProjectCard(project, statusColor, daysRemaining),
+    );
+  }
+
+  Widget _buildStaticProjectCard(
+      Project project,
+      Color statusColor,
+      int daysRemaining,
+      ) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => _onCardTap(project.id),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -519,7 +575,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           ),
           child: Stack(
             children: [
-              // Status Indicator Bar
+              // Status Indicator Bar - This will now show the correct color
               Positioned(
                 left: 0,
                 top: 0,
@@ -572,7 +628,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                             ],
                           ),
                         ),
-                        // Dropdown area
+                        // Dropdown area - This will show the correct status text and color
                         _buildStatusBadge(project),
                       ],
                     ),
@@ -593,69 +649,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
 
                     const SizedBox(height: 20),
 
-                    // Progress Section
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Progress',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            Text(
-                              '${(project.progress * 100).toInt()}%',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: statusColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Stack(
-                          children: [
-                            Container(
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(3),
-                              ),
-                            ),
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                return AnimatedContainer(
-                                  duration: const Duration(milliseconds: 800),
-                                  curve: Curves.easeOut,
-                                  height: 6,
-                                  width:
-                                      constraints.maxWidth * project.progress,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        statusColor,
-                                        statusColor.withOpacity(0.7),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(3),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Footer
+                    // Footer - Removed progress section and added only members and timeline
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -725,12 +719,16 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       ),
       child: PopupMenuButton<String>(
         onSelected: (value) async {
-          setState(() {
-            project.status = value;
-          });
-
-          await _getStatusText(project.id, value);
+          if (value == 'onhold') {
+            String? reason = await _showOnHoldReasonDialog();
+            if (reason != null && reason.isNotEmpty) {
+              await _updateProjectStatus(project.id, value, reason: reason);
+            }
+          } else {
+            await _updateProjectStatus(project.id, value);
+          }
         },
+
         itemBuilder: (context) => const [
           PopupMenuItem(value: 'pending', child: Text('Pending')),
           PopupMenuItem(value: 'continue', child: Text('Continue')),
@@ -740,7 +738,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
         child: Row(
           children: [
             Text(
-              project.status,
+              _getStatusDisplayText(project.status),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -754,19 +752,47 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
     );
   }
 
-  Future<void> _getStatusText(String projectId, String status) async {
+  String _getStatusDisplayText(String status) {
+    status = status.trim().toLowerCase();
+    switch (status) {
+      case 'pending':
+        return 'Pending';
+      case 'continue':
+        return 'Continue';
+      case 'onhold':
+        return 'On Hold';
+      case 'complete':
+        return 'Complete';
+      case 'approved':
+        return 'Approved';
+      default:
+        return status;
+    }
+  }
+
+  Future<void> _updateProjectStatus(String projectId, String status, {String? reason}) async {
     var url = Uri.parse(
       "https://prakrutitech.xyz/batch_project/update_project_status.php",
     );
-    var response = await http.post(
-      url,
-      body: {'id': projectId, 'status': status},
-    );
+
+    var body = {
+      'id': projectId,
+      'status': status,
+    };
+
+    if (reason != null) {
+      body['reason'] = reason;
+    }
+
+    var response = await http.post(url, body: body);
 
     if (response.statusCode == 200) {
-      print("Working update status API call!! ${response.body}");
+      print("Status updated: ${response.body}");
+      setState(() {
+        _projectsFuture = getProjects();
+      });
     } else {
-      print("Not Working update status API call");
+      print("Failed to update status");
     }
   }
 
@@ -780,16 +806,16 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const DashboardScreen(),
+        const DashboardScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
                 .animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeInOutCubic,
-                  ),
-                ),
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOutCubic,
+              ),
+            ),
             child: child,
           );
         },
@@ -814,17 +840,16 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
   }
 
   Color _getStatusColor(String status) {
+    status = status.trim().toLowerCase();
     switch (status) {
-      case 'onhold':
+      case 'pending':
         return const Color(0xFFF57C00);
       case 'continue':
         return const Color(0xFF1976D2);
-      case 'pending':
+      case 'onhold':
         return const Color(0xFFFFA000);
       case 'complete':
         return const Color(0xFF388E3C);
-      case 'approved':
-        return const Color(0xFF7B1FA2);
       default:
         return Colors.grey;
     }
@@ -850,7 +875,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       setState(() {
         _staggerAnimations = List.generate(
           projects.length,
-          (index) => Tween<double>(begin: 0, end: 1).animate(
+              (index) => Tween<double>(begin: 0, end: 1).animate(
             CurvedAnimation(
               parent: _animationController,
               curve: Interval(
@@ -868,5 +893,34 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       print("Get project api not working!!");
       return [];
     }
+  }
+
+  Future<String?> _showOnHoldReasonDialog() async {
+    TextEditingController reasonController = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Reason for On Hold"),
+          content: TextField(
+            controller: reasonController,
+            decoration: const InputDecoration(hintText: "Enter reason..."),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context, reasonController.text.trim());
+              },
+              child: const Text("Submit"),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

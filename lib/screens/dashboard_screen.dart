@@ -388,9 +388,10 @@ class _DashboardScreenState extends State<DashboardScreen>
 
 
   void _navigateToProjects() {
-    Navigator.push(
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const ProjectDetailsScreen()),
+          (route) => false, // This removes all previous routes
     );
   }
 }
