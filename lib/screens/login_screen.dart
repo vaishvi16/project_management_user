@@ -65,23 +65,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 40),
-                  // Email Field with advanced styling
                   TextFormField(
                     controller: _emailController,
                     decoration: InputDecoration(
                       labelText: 'Email',
-                      prefixIcon: const Icon(Icons.verified_user),
+                      prefixIcon: Icon(Icons.verified_user),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.8),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      contentPadding:  EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     ),
                     validator: (value) => value?.isEmpty ?? true ? 'Enter email' : null,
                   ),
-                  const SizedBox(height: 16),
+                   SizedBox(height: 16),
                   // Password Field
                   TextFormField(
                     controller: _passwordController,
