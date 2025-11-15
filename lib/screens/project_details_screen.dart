@@ -607,7 +607,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                project.name,
+                                project.title,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
