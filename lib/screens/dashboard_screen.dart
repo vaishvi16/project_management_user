@@ -78,6 +78,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         slivers: [
           // App Bar
           SliverAppBar(
+            iconTheme: IconThemeData(
+              color: Colors.white,
+            ),
             expandedHeight: 120,
             floating: false,
             pinned: true,

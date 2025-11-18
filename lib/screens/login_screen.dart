@@ -1,5 +1,9 @@
 // lib/screens/login_screen.dart
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:project_management_user/models/user.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import 'project_details_screen.dart';
@@ -103,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     validator: (value) => value?.isEmpty ?? true ? 'Enter password' : null,
                   ),
                   SizedBox(height: 10,),
-                  DropdownButtonFormField<String>(
+                  /*DropdownButtonFormField<String>(
                     value: _selectedRole,
                     decoration: const InputDecoration(
                       labelText: 'Role',
@@ -112,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     items: _roles.map((role) => DropdownMenuItem(value: role, child: Text(role))).toList(),
                     onChanged: (value) => setState(() => _selectedRole = value),
                     validator: (value) => value == null ? 'Select role' : null,
-                  ),
+                  ),*/
                   const SizedBox(height: 24),
                   // Login Button with animation
                   SizedBox(
@@ -122,15 +126,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         if (_formKey.currentState?.validate() ?? false) {
                           // Simulate login success
-                          Navigator.pushReplacement(
-                            context,
-                            PageRouteBuilder(
-                              pageBuilder: (context, animation, secondaryAnimation) => const ProjectDetailsScreen(),
-                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                return FadeTransition(opacity: animation, child: child);
-                              },
-                            ),
-                          );
+
+                          loginUser();
                         }
                       },
                       child: const Text('Login', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -167,6 +164,39 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  void loginUser() async{
+    var url = Uri.parse("https://prakrutitech.xyz/batch_project/login.php");
+    var response = await http.post(url, body: {
+      'email': _emailController.text.toString(),
+          'password': _passwordController.text.toString()
+    });
+    print("response body of user login ${response.body}");
+
+    final jsonData = jsonDecode(response.body);
+    UserModel umodel = UserModel.fromJson(jsonData);
+    print("User model: $umodel");
+
+    if(umodel.code == 200){
+      print("Login Success");
+      print("${umodel.user!.name}");
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => const ProjectDetailsScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+    }
+    else if(umodel.code == 401){
+      print("Login is not success!");
+    }
+    else{
+      print("Login Failed!!");
+    }
   }
 
   @override
