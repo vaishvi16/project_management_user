@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     validator: (value) => value?.isEmpty ?? true ? 'Enter password' : null,
                   ),
                   SizedBox(height: 10,),
-                  /*DropdownButtonFormField<String>(
+                  DropdownButtonFormField<String>(
                     value: _selectedRole,
                     decoration: const InputDecoration(
                       labelText: 'Role',
@@ -116,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     items: _roles.map((role) => DropdownMenuItem(value: role, child: Text(role))).toList(),
                     onChanged: (value) => setState(() => _selectedRole = value),
                     validator: (value) => value == null ? 'Select role' : null,
-                  ),*/
+                  ),
                   const SizedBox(height: 24),
                   // Login Button with animation
                   SizedBox(
@@ -170,7 +170,8 @@ class _LoginScreenState extends State<LoginScreen> {
     var url = Uri.parse("https://prakrutitech.xyz/batch_project/login.php");
     var response = await http.post(url, body: {
       'email': _emailController.text.toString(),
-          'password': _passwordController.text.toString()
+      'password': _passwordController.text.toString(),
+      'role': _selectedRole.toString()
     });
     print("response body of user login ${response.body}");
 
