@@ -3,9 +3,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:project_management_user/models/forgot_password.dart';
 import 'package:project_management_user/models/user.dart';
 import 'package:project_management_user/shared_preferences/shared_pref.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/theme_provider.dart';
 import 'project_details_screen.dart';
 
@@ -22,8 +24,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   String? _selectedRole;
-  static const List<String> _roles = ['Designer', 'Web Developer', 'App Developer', 'Tester', 'Backend'];
-  bool _showMessage = false;
+  static const List<String> _roles = [
+    'Designer',
+    'Web Developer',
+    'App Developer',
+    'Tester',
+    'Backend',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -53,10 +60,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [Colors.blue, Colors.cyan]),
+                        gradient: LinearGradient(
+                          colors: [Colors.blue, Colors.cyan],
+                        ),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.admin_panel_settings, size: 40, color: Colors.white),
+                      child: const Icon(
+                        Icons.admin_panel_settings,
+                        size: 40,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -81,11 +94,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.8),
-                      contentPadding:  EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
                     ),
-                    validator: (value) => value?.isEmpty ?? true ? 'Enter email' : null,
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'Enter email' : null,
                   ),
-                   SizedBox(height: 16),
+                  SizedBox(height: 16),
                   // Password Field
                   TextFormField(
                     controller: _passwordController,
@@ -94,8 +111,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       labelText: 'Password',
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -103,18 +126,27 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.8),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
                     ),
-                    validator: (value) => value?.isEmpty ?? true ? 'Enter password' : null,
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'Enter password' : null,
                   ),
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10),
                   DropdownButtonFormField<String>(
                     value: _selectedRole,
                     decoration: const InputDecoration(
                       labelText: 'Role',
                       prefixIcon: Icon(Icons.admin_panel_settings),
                     ),
-                    items: _roles.map((role) => DropdownMenuItem(value: role, child: Text(role))).toList(),
+                    items: _roles
+                        .map(
+                          (role) =>
+                              DropdownMenuItem(value: role, child: Text(role)),
+                        )
+                        .toList(),
                     onChanged: (value) => setState(() => _selectedRole = value),
                     validator: (value) => value == null ? 'Select role' : null,
                   ),
@@ -131,32 +163,34 @@ class _LoginScreenState extends State<LoginScreen> {
                           loginUser();
                         }
                       },
-                      child: const Text('Login', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Login',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: () {
-                      setState(() {
-                        _showMessage = !_showMessage; // toggle message
-                      });
+                      _requestForgetPassword();
                     },
                     child: Text("Forgot Password?"),
                   ),
-                  if (_showMessage)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        "Please contact your admin",
-                        style: TextStyle(color: Colors.red, fontSize: 16),
-                      ),
-                    ),
                   const SizedBox(height: 16),
                   // Theme Toggle (for demhgffhyo)
                   TextButton.icon(
                     onPressed: () => themeProvider.toggleTheme(),
-                    icon: Icon(themeProvider.currentThemeMode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode),
-                    label: Text('Toggle ${themeProvider.currentThemeMode == ThemeMode.dark ? 'Light' : 'Dark'} Mode'),
+                    icon: Icon(
+                      themeProvider.currentThemeMode == ThemeMode.dark
+                          ? Icons.light_mode
+                          : Icons.dark_mode,
+                    ),
+                    label: Text(
+                      'Toggle ${themeProvider.currentThemeMode == ThemeMode.dark ? 'Light' : 'Dark'} Mode',
+                    ),
                   ),
                 ],
               ),
@@ -167,37 +201,39 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void loginUser() async{
+  void loginUser() async {
     var url = Uri.parse("https://prakrutitech.xyz/batch_project/login.php");
-    var response = await http.post(url, body: {
-      'email': _emailController.text.toString(),
-      'password': _passwordController.text.toString(),
-      'role': _selectedRole.toString()
-    });
+    var response = await http.post(
+      url,
+      body: {
+        'email': _emailController.text.toString(),
+        'password': _passwordController.text.toString(),
+        'role': _selectedRole.toString(),
+      },
+    );
     print("response body of user login ${response.body}");
 
     final jsonData = jsonDecode(response.body);
     UserModel umodel = UserModel.fromJson(jsonData);
     print("User model: $umodel");
 
-    if(umodel.code == 200){
+    if (umodel.code == 200) {
       print("Login Success");
       await SharedPref.saveLoginStatus(true);
       print("${umodel.user!.name}");
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const ProjectDetailsScreen(),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const ProjectDetailsScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
         ),
       );
-    }
-    else if(umodel.code == 401){
+    } else if (umodel.code == 401) {
       print("Login is not success!");
-    }
-    else{
+    } else {
       print("Login Failed!!");
     }
   }
@@ -207,5 +243,42 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _requestForgetPassword() async {
+    var url = Uri.parse(
+      "https://prakrutitech.xyz/batch_project/forgot_password.php",
+    );
+    var response = await http.post(
+      url,
+      body: {'email': _emailController.text.toString()},
+    );
+
+    final jsonData = jsonDecode(response.body);
+    print("Json Data of Login screen ${response.body}");
+    ForgotPasswordModel fpModel = ForgotPasswordModel.fromJson(jsonData);
+
+    if (fpModel.code == 409) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            "${fpModel.message}",
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+    else if(fpModel.code == 404){
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            "${fpModel.message}",
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
   }
 }
