@@ -1,5 +1,8 @@
 // lib/screens/dashboard_screen.dart
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../models/project.dart';
 import 'history_screen.dart';
 import 'project_details_screen.dart';
@@ -26,11 +29,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     'approved': 2,
   };
 
-  static final Map<String, dynamic> _stats = {
-    'totalProjects': 16,
-    'completed': 4,
-    'inProgress': 7,
-    'teamMembers': 12,
+  Map<String, int> _stats = {
+    'total_projects': 0,
+    'Complete': 0,
+    'Pending': 0,
+    'On Hold': 0,
+    'teamMembers': 0,
   };
 
   @override
@@ -74,85 +78,97 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      body: CustomScrollView(
-        slivers: [
-          // App Bar
-          SliverAppBar(
-            iconTheme: IconThemeData(
-              color: Colors.white,
-            ),
-            expandedHeight: 120,
-            floating: false,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: SlideTransition(
-                position: _slideAnimation,
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: const Text(
-                    'Dashboard',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      fontSize: 20,
+      body: FutureBuilder(future: _fetchAllStats(), builder: (context,AsyncSnapshot snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.blue),
+          );
+        }
+
+        // Update stats for UI
+        _stats = snapshot.data!;
+
+        return  CustomScrollView(
+          slivers: [
+            // App Bar
+            SliverAppBar(
+              iconTheme: IconThemeData(
+                color: Colors.white,
+              ),
+              expandedHeight: 120,
+              floating: false,
+              pinned: true,
+              flexibleSpace: FlexibleSpaceBar(
+                title: SlideTransition(
+                  position: _slideAnimation,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: const Text(
+                      'Dashboard',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                ),
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF1976D2), // Blue 700
+                        Color(0xFF7B1FA2), // Purple 600
+                      ],
                     ),
                   ),
                 ),
               ),
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF1976D2), // Blue 700
-                      Color(0xFF7B1FA2), // Purple 600
-                    ],
+              actions: [
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.history, color: Colors.white, size: 20),
                   ),
+                  onPressed: _navigateToHistory,
                 ),
+                const SizedBox(width: 8),
+              ],
+            ),
+
+            // Dashboard Content
+            SliverPadding(
+              padding: const EdgeInsets.all(16), // Reduced padding to prevent overflow
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // Welcome Section
+                  _buildWelcomeSection(),
+                  const SizedBox(height: 24),
+
+                  // Stats Grid
+                  _buildStatsGrid(),
+                  const SizedBox(height: 24),
+
+                  // Charts Section
+                  // isWideScreen ? _buildWideCharts() : _buildMobileCharts(),
+                  const SizedBox(height: 24),
+
+
+                  // Activity Logs
+                  const SizedBox(height: 24), // Extra bottom padding
+                ]),
               ),
             ),
-            actions: [
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.history, color: Colors.white, size: 20),
-                ),
-                onPressed: _navigateToHistory,
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
+          ],
+        );
 
-          // Dashboard Content
-          SliverPadding(
-            padding: const EdgeInsets.all(16), // Reduced padding to prevent overflow
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // Welcome Section
-                _buildWelcomeSection(),
-                const SizedBox(height: 24),
-
-                // Stats Grid
-                _buildStatsGrid(),
-                const SizedBox(height: 24),
-
-                // Charts Section
-               // isWideScreen ? _buildWideCharts() : _buildMobileCharts(),
-                const SizedBox(height: 24),
-
-
-                // Activity Logs
-                const SizedBox(height: 24), // Extra bottom padding
-              ]),
-            ),
-          ),
-        ],
-      ),
+      },)
     );
   }
 
@@ -193,8 +209,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'You have ${_stats['inProgress']} projects in progress. '
-                          '${_stats['completed']} completed this month.',
+                      'You have ${_stats['Pending']} projects in progress. '
+                          '${_stats['Complete']} completed this month.',
                       style: TextStyle(
                         fontSize: 14, // Smaller font
                         color: Colors.grey.shade700,
@@ -254,24 +270,31 @@ class _DashboardScreenState extends State<DashboardScreen>
     final stats = [
       {
         'title': 'Total Projects',
-        'value': _stats['totalProjects'].toString(),
+        'value': _stats['total_projects'].toString(),
         'icon': Icons.assignment,
         'color': const Color(0xFF1976D2), // Blue
         'change': '+12%',
       },
       {
         'title': 'In Progress',
-        'value': _stats['inProgress'].toString(),
+        'value': _stats['Pending'].toString(),
         'icon': Icons.trending_up,
         'color': const Color(0xFFF57C00), // Orange
         'change': '+5%',
       },
       {
         'title': 'Completed',
-        'value': _stats['completed'].toString(),
+        'value': _stats['Complete'].toString(),
         'icon': Icons.check_circle,
         'color': const Color(0xFF388E3C), // Green
         'change': '+8%',
+      },
+      {
+        'title': 'On Hold',
+        'value': _stats['On Hold'],
+        'icon': Icons.pause_circle,
+        'color': const Color(0xFFF44336), // Red
+        'change': '+2%',
       },
     ];
 
@@ -355,7 +378,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          stat['value'] as String,
+                          stat['value'].toString(),
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
@@ -382,6 +405,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       },
     );
   }
+
   void _navigateToHistory() {
     Navigator.push(
       context,
@@ -397,4 +421,42 @@ class _DashboardScreenState extends State<DashboardScreen>
           (route) => false, // This removes all previous routes
     );
   }
+
+  Future<int> _fetchProjectCount({String? status}) async {
+    try {
+      String url = "https://prakrutitech.xyz/batch_project/view_project.php";
+
+      if (status != null && status.isNotEmpty) {
+        url = "$url?status=$status";
+      }
+
+      final res = await http.get(Uri.parse(url));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+
+        print("here is the data: $data");
+        return data['total_projects'] as int;      }
+      return 0;
+    } catch (e) {
+      print("API ERROR: $e");
+      return 0;
+    }
+  }
+
+  Future<Map<String, int>> _fetchAllStats() async {
+    final total = await _fetchProjectCount();
+    final Complete = await _fetchProjectCount(status: "Complete");
+    final OnHold = await _fetchProjectCount(status: "On Hold");
+    final Pending = await _fetchProjectCount(status: "Pending");
+
+    return {
+      'total_projects': total,
+      'Complete': Complete,
+      'Pending': Pending,
+      'On Hold': OnHold,
+      'teamMembers': 12,
+    };
+  }
+
 }

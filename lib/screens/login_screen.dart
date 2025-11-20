@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       labelText: 'Password',
-                      prefixIcon:  Icon(Icons.lock),
+                      prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
                         onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -125,6 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (_formKey.currentState?.validate() ?? false) {
+                          // Simulate login success
 
                           loginUser();
                         }
@@ -165,42 +166,37 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void loginUser() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      var url = Uri.parse("https://prakrutitech.xyz/batch_project/login.php");
-      var response = await http.post(url, body: {
-        'email': _emailController.text.toString(),
-        'password': _passwordController.text.toString(),
-        'role': _selectedRole.toString()
-      });
-      print("response body of user login ${response.body}");
+  void loginUser() async{
+    var url = Uri.parse("https://prakrutitech.xyz/batch_project/login.php");
+    var response = await http.post(url, body: {
+      'email': _emailController.text.toString(),
+      'password': _passwordController.text.toString(),
+      'role': _selectedRole.toString()
+    });
+    print("response body of user login ${response.body}");
 
-      final jsonData = jsonDecode(response.body);
-      UserModel umodel = UserModel.fromJson(jsonData);
-      print("User model: $umodel");
+    final jsonData = jsonDecode(response.body);
+    UserModel umodel = UserModel.fromJson(jsonData);
+    print("User model: $umodel");
 
-      if(umodel.code == 200){
-        print("Login Success");
-        print("${umodel.user!.name}");
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const ProjectDetailsScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-          ),
-        );
-      }
-      else{
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Invalid Credentials'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        print("Login Failed!!");
-      }
+    if(umodel.code == 200){
+      print("Login Success");
+      print("${umodel.user!.name}");
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => const ProjectDetailsScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+    }
+    else if(umodel.code == 401){
+      print("Login is not success!");
+    }
+    else{
+      print("Login Failed!!");
     }
   }
 
