@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:project_management_user/screens/login_screen.dart';
+import 'package:project_management_user/shared_preferences/shared_pref.dart';
 
 import '../models/project.dart';
 import 'dashboard_screen.dart';
@@ -167,6 +169,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           IconButton(
             icon: const Icon(Icons.dashboard, color: Colors.white),
             onPressed: _navigateToDashboard,
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.logout_outlined, color: Colors.white),
+            onPressed: _navigateToLoginScreen,
           ),
           const SizedBox(width: 8),
         ],
@@ -837,6 +844,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
         ],
       ),
     );
+  }
+
+  void _navigateToLoginScreen() {
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen(),));
+    SharedPref.saveLoginStatus(false);
   }
 
   Color _getStatusColor(String status) {

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:project_management_user/models/user.dart';
+import 'package:project_management_user/shared_preferences/shared_pref.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import 'project_details_screen.dart';
@@ -181,6 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if(umodel.code == 200){
       print("Login Success");
+      await SharedPref.saveLoginStatus(true);
       print("${umodel.user!.name}");
       Navigator.pushReplacement(
         context,

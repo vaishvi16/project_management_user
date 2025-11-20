@@ -1,9 +1,13 @@
 // lib/screens/splash_screen.dart
 import 'dart:math' as math;
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:project_management_user/screens/project_details_screen.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import '../providers/theme_provider.dart';
+import '../shared_preferences/shared_pref.dart';
+import 'connectivity_error_screen.dart';
 import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -15,6 +19,10 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
+
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  bool _navigated = false;
+
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -34,6 +42,9 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+
+    Future.delayed(const Duration(seconds: 2), _checkConnectivity);
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 2500),
       vsync: this,
@@ -120,6 +131,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _connectivitySubscription?.cancel();
     super.dispose();
   }
 
@@ -437,6 +449,42 @@ class _SplashScreenState extends State<SplashScreen>
         },
       ),
     );
+  }
+
+  void _checkConnectivity() {
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> result) async {
+          if (_navigated) return; // prevent double navigation
+
+          if (result.contains(ConnectivityResult.mobile) ||
+              result.contains(ConnectivityResult.wifi)) {
+            bool isLoggedIn = await SharedPref.getLoginStatus();
+
+            setState(() {
+              _navigated = true;
+            });
+
+            if (isLoggedIn) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const ProjectDetailsScreen()),
+              );
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            }
+          } else {
+            setState(() {
+              _navigated = true;
+            });
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const ConnectivityErrorScreen()),
+            );
+          }
+        });
   }
 }
 
