@@ -32,6 +32,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
   double _scrollOffset = 0;
   String _selectedSortOption = 'All';
   late Future<List<Project>> _projectsFuture;
+  final _formKey = GlobalKey<FormState>();
 
   // Add this key for RefreshIndicator
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
@@ -765,7 +766,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
         return 'Pending';
       case 'continue':
         return 'Continue';
-      case 'On Hold':
+      case 'on hold':
         return 'On Hold';
       case 'complete':
         return 'Complete';
@@ -858,8 +859,8 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
         return const Color(0xFFF57C00);
       case 'continue':
         return const Color(0xFF1976D2);
-      case 'On Hold':
-        return const Color(0xFFFFA000);
+      case 'on hold':
+        return const Color(0xFFD000FF);
       case 'complete':
         return const Color(0xFF388E3C);
       default:
@@ -915,9 +916,18 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       builder: (context) {
         return AlertDialog(
           title: const Text("Reason for On Hold"),
-          content: TextField(
-            controller: reasonController,
-            decoration: const InputDecoration(hintText: "Enter reason..."),
+          content: Form(
+            key: _formKey,
+            child: TextFormField(
+                validator: (val) {
+                  if (val!.isEmpty) {
+                    return "Please Enter Your Reason";
+                  }
+                  return null;
+                },
+              controller: reasonController,
+              decoration: InputDecoration(hintText: "Enter reason..."),
+            ),
           ),
           actions: [
             TextButton(
@@ -926,8 +936,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context, reasonController.text.trim());
-              },
+                if(_formKey.currentState!.validate()){
+                  String reason=reasonController.text.toString();
+                  if(reason.isEmpty){
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text("Please Enter Reason")));
+                  }else{
+                    Navigator.pop(context, reasonController.text.trim());
+                  }
+                }
+                },
               child: const Text("Submit"),
             ),
           ],
