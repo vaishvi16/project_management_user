@@ -21,6 +21,7 @@ class _ConnectivityErrorScreenState extends State<ConnectivityErrorScreen> {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   bool _navigated = false;
+  //already pushed the code
 
   @override
   Widget build(BuildContext context) {
