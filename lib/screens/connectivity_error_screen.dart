@@ -11,7 +11,7 @@ class ConnectivityErrorScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding:  EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -30,7 +30,7 @@ class ConnectivityErrorScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 32),
+               SizedBox(height: 32),
 
               // Title
               Text(
@@ -43,7 +43,7 @@ class ConnectivityErrorScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 16),
+               SizedBox(height: 16),
 
               // Description
               Text(
@@ -63,7 +63,6 @@ class ConnectivityErrorScreen extends StatelessWidget {
 
               TextButton(
                 onPressed: () {
-                  // You can add functionality to check network settings
                   _showHelpDialog(context);
                 },
                 child: Text(
@@ -85,8 +84,8 @@ class ConnectivityErrorScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Network Help"),
-        content: const Text(
+        title:  Text("Network Help"),
+        content:  Text(
             "• Check if Wi-Fi or mobile data is turned on\n"
                 "• Restart your router\n"
                 "• Move to a location with better signal\n"
@@ -95,7 +94,7 @@ class ConnectivityErrorScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
+            child:  Text("OK"),
           ),
         ],
       ),
