@@ -15,7 +15,6 @@ class ConnectivityErrorScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Animated Icon
               Container(
                 width: 120,
                 height: 120,
@@ -32,7 +31,6 @@ class ConnectivityErrorScreen extends StatelessWidget {
 
                SizedBox(height: 32),
 
-              // Title
               Text(
                 "No Internet Connection",
                 style: TextStyle(
@@ -45,7 +43,6 @@ class ConnectivityErrorScreen extends StatelessWidget {
 
                SizedBox(height: 16),
 
-              // Description
               Text(
                 "It looks like you're not connected to the internet. "
                     "Please check your connection and try again.",
