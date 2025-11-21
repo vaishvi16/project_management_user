@@ -380,7 +380,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                                     child: Text('Continue'),
                                   ),
                                   DropdownMenuItem(
-                                    value: 'onhold',
+                                    value: 'On Hold',
                                     child: Text('On Hold'),
                                   ),
                                   DropdownMenuItem(
@@ -725,7 +725,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       ),
       child: PopupMenuButton<String>(
         onSelected: (value) async {
-          if (value == 'onhold') {
+          if (value == 'On Hold') {
             String? reason = await _showOnHoldReasonDialog();
             if (reason != null && reason.isNotEmpty) {
               await _updateProjectStatus(project.id, value, reason: reason);
@@ -738,7 +738,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
         itemBuilder: (context) => const [
           PopupMenuItem(value: 'pending', child: Text('Pending')),
           PopupMenuItem(value: 'continue', child: Text('Continue')),
-          PopupMenuItem(value: 'onhold', child: Text('On Hold')),
+          PopupMenuItem(value: 'On Hold', child: Text('On Hold')),
           PopupMenuItem(value: 'complete', child: Text('Complete')),
         ],
         child: Row(
@@ -765,7 +765,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
         return 'Pending';
       case 'continue':
         return 'Continue';
-      case 'onhold':
+      case 'On Hold':
         return 'On Hold';
       case 'complete':
         return 'Complete';
@@ -787,13 +787,14 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
     };
 
     if (reason != null) {
-      body['reason'] = reason;
+      body['reason_for_hold'] = reason;
+
     }
 
     var response = await http.post(url, body: body);
 
     if (response.statusCode == 200) {
-      print("Status updated: ${response.body}");
+      print("Status updatedddddddd: ${response.body}");
       setState(() {
         _projectsFuture = getProjects();
       });
@@ -857,7 +858,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
         return const Color(0xFFF57C00);
       case 'continue':
         return const Color(0xFF1976D2);
-      case 'onhold':
+      case 'On Hold':
         return const Color(0xFFFFA000);
       case 'complete':
         return const Color(0xFF388E3C);
