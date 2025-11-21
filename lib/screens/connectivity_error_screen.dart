@@ -61,7 +61,6 @@ class ConnectivityErrorScreen extends StatelessWidget {
 
                SizedBox(height: 16),
 
-              // Secondary Action
               TextButton(
                 onPressed: () {
                   // You can add functionality to check network settings
