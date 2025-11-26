@@ -197,11 +197,12 @@ class _LoginScreenState extends State<LoginScreen> {
       print("Login Success");
       await SharedPref.saveLoginStatus(true);
       print("${umodel.user!.name}");
+      var email = _emailController.text.toString();
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-              const ProjectDetailsScreen(),
+              ProjectDetailsScreen(email: email),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },

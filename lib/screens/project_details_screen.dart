@@ -11,7 +11,9 @@ import '../models/project.dart';
 import 'dashboard_screen.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
-  const ProjectDetailsScreen({super.key});
+
+  var email;
+  ProjectDetailsScreen({this.email});
 
   static final List<Project> _projects = [];
 
@@ -901,7 +903,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
         );
       });
 
-      return projects;
+      final filteredProjects = projects.where((project) {
+        return project.members_email.contains("${widget.email}");
+      }).toList();
+
+      print("Filtered projects count: ${filteredProjects.length}");
+
+      return filteredProjects;
     } else {
       print("Get project api not working!!");
       return [];
