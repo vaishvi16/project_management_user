@@ -195,9 +195,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (umodel.code == 200) {
       print("Login Success");
-      await SharedPref.saveLoginStatus(true);
-      print("${umodel.user!.name}");
       var email = _emailController.text.toString();
+      await SharedPref.saveLoginStatus(true);
+      await SharedPref.saveUserEmail(email);
+      print("${umodel.user!.name}");
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(

@@ -459,15 +459,18 @@ class _SplashScreenState extends State<SplashScreen>
           if (result.contains(ConnectivityResult.mobile) ||
               result.contains(ConnectivityResult.wifi)) {
             bool isLoggedIn = await SharedPref.getLoginStatus();
+            String? email = await SharedPref.getUserEmail();
+            print("shared pref user email $email");
 
             setState(() {
               _navigated = true;
             });
 
             if (isLoggedIn) {
+              print("shared pref: email $email");
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => ProjectDetailsScreen()),
+                MaterialPageRoute(builder: (context) => ProjectDetailsScreen(email: email,)),
               );
             } else {
               Navigator.pushReplacement(
