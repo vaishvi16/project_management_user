@@ -410,7 +410,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   void _navigateToHistory() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const HistoryScreen()),
+      MaterialPageRoute(builder: (context) => HistoryScreen(email: widget.email)),
     );
   }
 
