@@ -825,7 +825,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-        const DashboardScreen(),
+            DashboardScreen(email: widget.email),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)

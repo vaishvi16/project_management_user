@@ -8,7 +8,8 @@ import 'history_screen.dart';
 import 'project_details_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+   final String? email;
+  DashboardScreen({this.email});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -417,7 +418,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   void _navigateToProjects() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => ProjectDetailsScreen()),
+      MaterialPageRoute(builder: (context) => ProjectDetailsScreen(email: widget.email)),
           (route) => false, // This removes all previous routes
     );
   }
