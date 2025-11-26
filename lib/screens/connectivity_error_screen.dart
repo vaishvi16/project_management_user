@@ -144,7 +144,7 @@ class _ConnectivityErrorScreenState extends State<ConnectivityErrorScreen> {
             if (isLoggedIn) {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const ProjectDetailsScreen()),
+                MaterialPageRoute(builder: (context) => ProjectDetailsScreen()),
               );
             } else {
               Navigator.pushReplacement(
