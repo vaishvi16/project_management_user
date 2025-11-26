@@ -173,8 +173,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.logout_outlined, color: Colors.white),
-            onPressed: _navigateToLoginScreen,
+            icon: Icon(Icons.logout, color: Colors.white),
+            onPressed: () async {
+              bool? shouldLogout = await _showLogoutConfirmationDialog(context);
+              if (shouldLogout == true) {
+                await SharedPref.saveLoginStatus(false);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginScreen()),
+                );
+              }
+            },
           ),
           const SizedBox(width: 8),
         ],
@@ -948,6 +957,32 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                 }
                 },
               child: const Text("Submit"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool?> _showLogoutConfirmationDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Confirm Logout"),
+          content: Text("Are you sure you want to log out?"),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false); // User cancels, so return false
+              },
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, true); // User confirms, so return true
+              },
+              child: Text("Log Out"),
             ),
           ],
         );
