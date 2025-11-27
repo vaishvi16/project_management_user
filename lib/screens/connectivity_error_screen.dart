@@ -10,8 +10,9 @@ import 'login_screen.dart';
 
 class ConnectivityErrorScreen extends StatefulWidget {
   final VoidCallback? onRetry;
+  final String? email;
 
-  ConnectivityErrorScreen({super.key, this.onRetry});
+  ConnectivityErrorScreen({super.key, this.onRetry, this.email});
 
   @override
   State<ConnectivityErrorScreen> createState() => _ConnectivityErrorScreenState();
@@ -144,7 +145,7 @@ class _ConnectivityErrorScreenState extends State<ConnectivityErrorScreen> {
             if (isLoggedIn) {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => ProjectDetailsScreen()),
+                MaterialPageRoute(builder: (context) => ProjectDetailsScreen(email: widget.email,)),
               );
             } else {
               Navigator.pushReplacement(

@@ -22,6 +22,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   bool _navigated = false;
+  String? email;
 
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -459,7 +460,7 @@ class _SplashScreenState extends State<SplashScreen>
           if (result.contains(ConnectivityResult.mobile) ||
               result.contains(ConnectivityResult.wifi)) {
             bool isLoggedIn = await SharedPref.getLoginStatus();
-            String? email = await SharedPref.getUserEmail();
+            email = await SharedPref.getUserEmail();
             print("shared pref user email $email");
 
             setState(() {
@@ -484,7 +485,7 @@ class _SplashScreenState extends State<SplashScreen>
             });
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => ConnectivityErrorScreen()),
+              MaterialPageRoute(builder: (context) => ConnectivityErrorScreen(email: email)),
             );
           }
         });
