@@ -1,18 +1,16 @@
 // lib/screens/project_details_screen.dart
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:project_management_user/screens/login_screen.dart';
 import 'package:project_management_user/shared_preferences/shared_pref.dart';
-
 import '../models/project.dart';
 import 'dashboard_screen.dart';
 
 class ProjectDetailsScreen extends StatefulWidget {
-
   var email;
+
   ProjectDetailsScreen({this.email});
 
   static final List<Project> _projects = [];
@@ -38,7 +36,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
 
   // Add this key for RefreshIndicator
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
-  GlobalKey<RefreshIndicatorState>();
+      GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
@@ -142,13 +140,13 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: AnimatedOpacity(
-          opacity: _scrollOffset > 100 ? 1 : 0,
+          opacity: _scrollOffset > 100 ? 1 : 0.6,
           duration: const Duration(milliseconds: 300),
-          child: const Text(
-            'Projects',
-            style: TextStyle(
+          child: Text(
+            widget.email,
+            style: const TextStyle(
               fontWeight: FontWeight.w700,
-              color: Colors.black87,
+              color: Colors.white,
             ),
           ),
         ),
@@ -161,10 +159,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
             gradient: _scrollOffset > 100
                 ? null
                 : const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1976D2), Color(0xFF7B1FA2)],
-            ),
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF1976D2), Color(0xFF7B1FA2)],
+                  ),
           ),
         ),
         systemOverlayStyle: SystemUiOverlayStyle.light,
@@ -272,19 +270,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
                           // Search Bar
                           SlideTransition(
                             position:
-                            Tween<Offset>(
-                              begin: const Offset(0, 0.5),
-                              end: Offset.zero,
-                            ).animate(
-                              CurvedAnimation(
-                                parent: _animationController,
-                                curve: const Interval(
-                                  0.5,
-                                  1,
-                                  curve: Curves.easeOut,
+                                Tween<Offset>(
+                                  begin: const Offset(0, 0.5),
+                                  end: Offset.zero,
+                                ).animate(
+                                  CurvedAnimation(
+                                    parent: _animationController,
+                                    curve: const Interval(
+                                      0.5,
+                                      1,
+                                      curve: Curves.easeOut,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
                             child: FadeTransition(
                               opacity: _fadeAnimation,
                               child: Container(
@@ -453,9 +451,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           return SliverToBoxAdapter(
             child: Container(
               height: 200,
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
           );
         } else if (snapshot.hasError) {
@@ -502,9 +498,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           return SliverToBoxAdapter(
             child: Container(
               height: 200,
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
           );
         } else if (snapshot.hasError) {
@@ -572,10 +566,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
   }
 
   Widget _buildStaticProjectCard(
-      Project project,
-      Color statusColor,
-      int daysRemaining,
-      ) {
+    Project project,
+    Color statusColor,
+    int daysRemaining,
+  ) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -788,19 +782,19 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
     }
   }
 
-  Future<void> _updateProjectStatus(String projectId, String status, {String? reason}) async {
+  Future<void> _updateProjectStatus(
+    String projectId,
+    String status, {
+    String? reason,
+  }) async {
     var url = Uri.parse(
       "https://prakrutitech.xyz/batch_project/update_project_status.php",
     );
 
-    var body = {
-      'id': projectId,
-      'status': status,
-    };
+    var body = {'id': projectId, 'status': status};
 
     if (reason != null) {
       body['reason_for_hold'] = reason;
-
     }
 
     var response = await http.post(url, body: body);
@@ -830,11 +824,11 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           return SlideTransition(
             position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
                 .animate(
-              CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeInOutCubic,
-              ),
-            ),
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeInOutCubic,
+                  ),
+                ),
             child: child,
           );
         },
@@ -859,7 +853,10 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
   }
 
   void _navigateToLoginScreen() {
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen(),));
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
     SharedPref.saveLoginStatus(false);
   }
 
@@ -899,7 +896,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
       setState(() {
         _staggerAnimations = List.generate(
           projects.length,
-              (index) => Tween<double>(begin: 0, end: 1).animate(
+          (index) => Tween<double>(begin: 0, end: 1).animate(
             CurvedAnimation(
               parent: _animationController,
               curve: Interval(
@@ -936,12 +933,12 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
           content: Form(
             key: _formKey,
             child: TextFormField(
-                validator: (val) {
-                  if (val!.isEmpty) {
-                    return "Please Enter Your Reason";
-                  }
-                  return null;
-                },
+              validator: (val) {
+                if (val!.isEmpty) {
+                  return "Please Enter Your Reason";
+                }
+                return null;
+              },
               controller: reasonController,
               decoration: InputDecoration(hintText: "Enter reason..."),
             ),
@@ -953,17 +950,17 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen>
             ),
             ElevatedButton(
               onPressed: () {
-                if(_formKey.currentState!.validate()){
-                  String reason=reasonController.text.toString();
-                  if(reason.isEmpty){
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text("Please Enter Reason")));
-                  }else{
+                if (_formKey.currentState!.validate()) {
+                  String reason = reasonController.text.toString();
+                  if (reason.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Please Enter Reason")),
+                    );
+                  } else {
                     Navigator.pop(context, reasonController.text.trim());
                   }
                 }
-                },
+              },
               child: const Text("Submit"),
             ),
           ],
