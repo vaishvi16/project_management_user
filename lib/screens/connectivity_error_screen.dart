@@ -22,6 +22,7 @@ class _ConnectivityErrorScreenState extends State<ConnectivityErrorScreen> {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   bool _navigated = false;
+  String? email;
   //already pushed the code..
 
   @override
@@ -137,6 +138,7 @@ class _ConnectivityErrorScreenState extends State<ConnectivityErrorScreen> {
           if (result.contains(ConnectivityResult.mobile) ||
               result.contains(ConnectivityResult.wifi)) {
             bool isLoggedIn = await SharedPref.getLoginStatus();
+            email = await SharedPref.getUserEmail();
 
             setState(() {
               _navigated = true;
@@ -145,7 +147,7 @@ class _ConnectivityErrorScreenState extends State<ConnectivityErrorScreen> {
             if (isLoggedIn) {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => ProjectDetailsScreen(email: widget.email,)),
+                MaterialPageRoute(builder: (context) => ProjectDetailsScreen(email: email,)),
               );
             } else {
               Navigator.pushReplacement(
@@ -159,7 +161,7 @@ class _ConnectivityErrorScreenState extends State<ConnectivityErrorScreen> {
             });
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) =>  ConnectivityErrorScreen(email: widget.email,)),
+              MaterialPageRoute(builder: (context) =>  ConnectivityErrorScreen(email: email,)),
             );
           }
         });
