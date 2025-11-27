@@ -10,9 +10,8 @@ import 'login_screen.dart';
 
 class ConnectivityErrorScreen extends StatefulWidget {
   final VoidCallback? onRetry;
-  final String? email;
 
-  ConnectivityErrorScreen({super.key, this.onRetry, this.email});
+  ConnectivityErrorScreen({super.key, this.onRetry});
 
   @override
   State<ConnectivityErrorScreen> createState() => _ConnectivityErrorScreenState();

@@ -485,7 +485,7 @@ class _SplashScreenState extends State<SplashScreen>
             });
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => ConnectivityErrorScreen(email: email)),
+              MaterialPageRoute(builder: (context) => ConnectivityErrorScreen()),
             );
           }
         });
