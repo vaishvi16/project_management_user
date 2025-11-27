@@ -160,7 +160,7 @@ class _ConnectivityErrorScreenState extends State<ConnectivityErrorScreen> {
             });
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) =>  ConnectivityErrorScreen(email: email,)),
+              MaterialPageRoute(builder: (context) =>  ConnectivityErrorScreen()),
             );
           }
         });
