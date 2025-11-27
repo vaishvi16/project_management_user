@@ -159,7 +159,7 @@ class _ConnectivityErrorScreenState extends State<ConnectivityErrorScreen> {
             });
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) =>  ConnectivityErrorScreen()),
+              MaterialPageRoute(builder: (context) =>  ConnectivityErrorScreen(email: widget.email,)),
             );
           }
         });
